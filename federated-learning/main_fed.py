@@ -44,7 +44,7 @@ if __name__ == '__main__':
             exit('Error: only consider IID setting in CIFAR10')
     else:
         exit('Error: unrecognized dataset')
-    img_size = dataset_train[0][0].shape
+    img_size = dataset_train[0][0].shape  #得到维数大小
 
     # build model
     if args.model == 'cnn' and args.dataset == 'cifar':
