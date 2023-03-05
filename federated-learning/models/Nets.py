@@ -16,7 +16,7 @@ class MLP(nn.Module):
         self.layer_hidden = nn.Linear(dim_hidden, dim_out)
 
     def forward(self, x):
-        x = x.view(-1, x.shape[1]*x.shape[-2]*x.shape[-1])
+        x = x.view(-1, x.shape[1]*x.shape[-2]*x.shape[-1]) # 调整张量的维度和大小（改为2维），但不改变张量的数据
         x = self.layer_input(x)
         x = self.dropout(x)
         x = self.relu(x)
