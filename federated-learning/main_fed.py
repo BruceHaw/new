@@ -29,6 +29,7 @@ if __name__ == '__main__':
         trans_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]) 
         dataset_train = datasets.MNIST('../data/mnist/', train=True, download=True, transform=trans_mnist)
         dataset_test = datasets.MNIST('../data/mnist/', train=False, download=True, transform=trans_mnist)
+        print(dataset_train)
         # sample users
         if args.iid:
             dict_users = mnist_iid(dataset_train, args.num_users)
@@ -58,11 +59,11 @@ if __name__ == '__main__':
         net_glob = MLP(dim_in=len_in, dim_hidden=200, dim_out=args.num_classes).to(args.device)
     else:
         exit('Error: unrecognized model')
-    print(net_glob)
-    net_glob.train()
+    print(net_glob) #输出模型
+    net_glob.train() 
 
     # copy weights
-    w_glob = net_glob.state_dict()
+    w_glob = net_glob.state_dict() #用字典暂存这个模型的参数
 
     # training
     loss_train = []
@@ -74,13 +75,13 @@ if __name__ == '__main__':
 
     if args.all_clients: 
         print("Aggregation over all clients")
-        w_locals = [w_glob for i in range(args.num_users)]
+        w_locals = [w_glob for i in range(args.num_users)] #从glob取出参数
     for iter in range(args.epochs):
         loss_locals = []
         if not args.all_clients:
             w_locals = []
         m = max(int(args.frac * args.num_users), 1)
-        idxs_users = np.random.choice(range(args.num_users), m, replace=False)
+        idxs_users = np.random.choice(range(args.num_users), m, replace=False) #随机抽取m个客户端
         for idx in idxs_users:
             local = LocalUpdate(args=args, dataset=dataset_train, idxs=dict_users[idx])
             w, loss = local.train(net=copy.deepcopy(net_glob).to(args.device))
@@ -104,6 +105,7 @@ if __name__ == '__main__':
     plt.figure()
     plt.plot(range(len(loss_train)), loss_train)
     plt.ylabel('train_loss')
+    plt.xlabel('epoches')
     plt.savefig('./save/fed_{}_{}_{}_C{}_iid{}.png'.format(args.dataset, args.model, args.epochs, args.frac, args.iid))
 
     # testing

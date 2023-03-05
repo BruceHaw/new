@@ -28,7 +28,7 @@ class LocalUpdate(object):
         self.args = args
         self.loss_func = nn.CrossEntropyLoss()
         self.selected_clients = []
-        self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=self.args.local_bs, shuffle=True)
+        self.ldr_train = DataLoader(DatasetSplit(dataset, idxs), batch_size=self.args.local_bs, shuffle=True)  # 把数据打乱并分组成本地batch size的batches
 
     def train(self, net):
         net.train()
@@ -40,11 +40,11 @@ class LocalUpdate(object):
             batch_loss = []
             for batch_idx, (images, labels) in enumerate(self.ldr_train):
                 images, labels = images.to(self.args.device), labels.to(self.args.device)
-                net.zero_grad()
+                net.zero_grad() #在每次反向传播计算梯度前，需要先清空之前的梯度信息，以避免梯度信息的叠加
                 log_probs = net(images)
-                loss = self.loss_func(log_probs, labels)
-                loss.backward()
-                optimizer.step()
+                loss = self.loss_func(log_probs, labels) # 计算真实输出和labels的交叉熵损失函数
+                loss.backward()  # 反向传播
+                optimizer.step() # 更新模型参数
                 if self.args.verbose and batch_idx % 10 == 0:
                     print('Update Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                         iter, batch_idx * len(images), len(self.ldr_train.dataset),
