@@ -1,6 +1,7 @@
-import torch
+import numpy as np
+idxs_labels = np.array([[3, 2, 0, 4, 1],
+                        [5, 8, 3, 1, 2]])
 
-
-
-dict_users, all_idxs = {}, [i for i in range(10)]
-print(dict_users)
+idxs_labels = idxs_labels[:, idxs_labels[1,:].argsort()]
+idxs = idxs_labels[0,:]
+print(idxs)

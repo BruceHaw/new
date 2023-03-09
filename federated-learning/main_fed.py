@@ -10,7 +10,7 @@ import numpy as np
 from torchvision import datasets, transforms
 import torch
 
-from utils.sampling import mnist_iid, mnist_noniid, cifar_iid
+from utils.iid import mnist_iid, mnist_noniid, cifar_iid
 from utils.options import args_parser
 from models.Update import LocalUpdate
 from models.Nets import MLP, CNNMnist, CNNCifar
@@ -27,16 +27,18 @@ if __name__ == '__main__':
     if args.dataset == 'mnist':
         # transforms.Compose函py数可以用于将多个图像变换函数组合在一起，构成一个变换序列，使得我们可以对一张图片进行一系列的变换。在此为将图片转换为PyTorch中的Tensor类型和对图片进行归一化，使得其像素值在$[0, 1]$范围内，并使用给定的均值和标准差进行标准化处理。（有先后顺序）
         trans_mnist = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]) 
+        # 下载数据集
         dataset_train = datasets.MNIST('../data/mnist/', train=True, download=True, transform=trans_mnist)
         dataset_test = datasets.MNIST('../data/mnist/', train=False, download=True, transform=trans_mnist)
         print(dataset_train)
-        # sample users
+        #  users are iid or not 
         if args.iid:
             dict_users = mnist_iid(dataset_train, args.num_users)
         else:
             dict_users = mnist_noniid(dataset_train, args.num_users)
     elif args.dataset == 'cifar':
         trans_cifar = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        # 下载数据集
         dataset_train = datasets.CIFAR10('../data/cifar', train=True, download=True, transform=trans_cifar)
         dataset_test = datasets.CIFAR10('../data/cifar', train=False, download=True, transform=trans_cifar)
         if args.iid:
@@ -67,6 +69,7 @@ if __name__ == '__main__':
 
     # training
     loss_train = []
+    acc_train = []
     cv_loss, cv_acc = [], []
     val_loss_pre, counter = 0, 0
     net_best = None
@@ -96,17 +99,27 @@ if __name__ == '__main__':
         # copy weight to net_glob
         net_glob.load_state_dict(w_glob)
 
-        # print loss
+        # print loss and acc
         loss_avg = sum(loss_locals) / len(loss_locals)
-        print('Round {:3d}, Average loss {:.3f}'.format(iter, loss_avg))
+        print('Round {:3d}, Average loss {:.3f} Acc'.format(iter, loss_avg))
         loss_train.append(loss_avg)
+        acc, lo = test_img(net_glob, dataset_train, args)
+        acc_train.append(acc)
 
-    # plot loss curve
-    plt.figure()
-    plt.plot(range(len(loss_train)), loss_train)
-    plt.ylabel('train_loss')
-    plt.xlabel('epoches')
-    plt.savefig('./save/fed_{}_{}_{}_C{}_iid{}.png'.format(args.dataset, args.model, args.epochs, args.frac, args.iid))
+    # plot loss and acc curve
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+
+    ax1.set_title('Loss_curve')
+    ax1.plot(range(len(loss_train)), loss_train)
+    ax1.set_ylabel('train_loss')
+    ax1.set_xlabel('epoches')
+
+    ax2.set_title('Acc_curve')
+    ax2.plot(range(len(acc_train)), acc_train)
+    ax2.set_ylabel('train_acc')
+    ax2.set_xlabel('epoches')
+
+    plt.savefig('./curve_save/fed_{}_{}_{}_C{}_iid{}.png'.format(args.dataset, args.model, args.epochs, args.frac, args.iid))
 
     # testing
     net_glob.eval()
